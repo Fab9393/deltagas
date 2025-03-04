@@ -44,6 +44,7 @@
       border: 1px solid #ddd;
       background: #fff;
       box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
     }
     table {
       width: 100%;
@@ -85,6 +86,10 @@
     button:hover {
       background: #555;
     }
+    .action-btn {
+      margin: 2px;
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
@@ -102,8 +107,8 @@
           <thead>
             <tr>
               <th>Giorno</th>
-              <th>Esterni</th>
               <th>Ufficio</th>
+              <th>Vecchi Clienti</th>
               <th>Nuovi Clienti</th>
             </tr>
           </thead>
@@ -121,6 +126,7 @@
         <input type="text" id="questionInput" placeholder="Inserisci la domanda" required>
         <button type="submit">Invia Domanda</button>
       </form>
+      <button id="downloadJsonBtn" class="action-btn">Scarica JSON</button>
       <div class="table-container">
         <table>
           <thead>
@@ -138,18 +144,18 @@
   </div>
   
   <script>
-    // Funzione per mostrare la sezione desiderata
+    // Gestione della navigazione tra sezioni
     function showSection(sectionId) {
       const sections = document.querySelectorAll("section");
       sections.forEach(section => section.classList.remove("active"));
       document.getElementById(sectionId).classList.add("active");
     }
     
-    // Gestione della navigazione
     document.getElementById("navHome").addEventListener("click", () => showSection("homeSection"));
     document.getElementById("navUrgenze").addEventListener("click", () => showSection("urgenzeSection"));
     
-    // Funzione per generare la tabella della Home (pulizie)
+    // ----------------------------
+    // Sezione Home - Tabella Pulizie
     function generatePulizieTable() {
       const tbody = document.getElementById('pulizieTableBody');
       tbody.innerHTML = "";
@@ -164,7 +170,7 @@
         tdDay.textContent = day;
         tr.appendChild(tdDay);
         
-        ['Esterni', 'Ufficio', 'Nuovi Clienti'].forEach(() => {
+        ['Ufficio', 'Vecchi Client', 'Nuovi Clienti'].forEach(() => {
           const td = document.createElement('td');
           const input = document.createElement('input');
           input.type = 'number';
@@ -179,45 +185,110 @@
     
     generatePulizieTable();
     
-    // Gestione della sezione Urgenze
+    // ----------------------------
+    // Sezione Urgenze
     let urgenzeData = [];
     
+    // Carica i dati dal localStorage (se esistenti)
+    function loadUrgenzeData() {
+      const data = localStorage.getItem("urgenzeData");
+      if(data) {
+        urgenzeData = JSON.parse(data);
+      }
+    }
+    
+    // Salva i dati nel localStorage
+    function saveUrgenzeData() {
+      localStorage.setItem("urgenzeData", JSON.stringify(urgenzeData));
+    }
+    
+    // Renderizza la tabella delle urgenze
     function renderUrgenzeTable() {
       const tbody = document.getElementById('urgenzeTableBody');
       tbody.innerHTML = "";
-      urgenzeData.forEach(item => {
+      urgenzeData.forEach((item, index) => {
         const tr = document.createElement('tr');
-        // Applica lo stile in base allo stato (con o senza risposta)
         if(item.domanda && !item.risposta) {
           tr.classList.add('status-pending');
         } else if(item.domanda && item.risposta) {
           tr.classList.add('status-answered');
         }
         
+        // Colonna Domanda
         const tdDomanda = document.createElement('td');
         tdDomanda.textContent = item.domanda || "";
         tr.appendChild(tdDomanda);
         
+        // Colonna Risposta
         const tdRisposta = document.createElement('td');
-        tdRisposta.textContent = item.risposta || "";
+        if(item.risposta) {
+          tdRisposta.textContent = item.risposta;
+        } else {
+          // Se non c'è risposta, mostra il pulsante per rispondere
+          const answerBtn = document.createElement('button');
+          answerBtn.textContent = "Rispondi";
+          answerBtn.classList.add('action-btn');
+          answerBtn.addEventListener('click', () => showAnswerInput(index, tdRisposta));
+          tdRisposta.appendChild(answerBtn);
+        }
         tr.appendChild(tdRisposta);
         
         tbody.appendChild(tr);
       });
     }
     
-    // Aggiunta di una nuova domanda tramite il form
+    // Mostra un input per inserire la risposta
+    function showAnswerInput(index, tdElement) {
+      tdElement.innerHTML = ""; // pulisci il contenuto
+      const input = document.createElement('input');
+      input.type = "text";
+      input.placeholder = "Inserisci la risposta";
+      input.style.width = "80%";
+      tdElement.appendChild(input);
+      
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = "Salva";
+      saveBtn.classList.add('action-btn');
+      saveBtn.addEventListener('click', () => {
+        const answer = input.value.trim();
+        if(answer) {
+          urgenzeData[index].risposta = answer;
+          saveUrgenzeData();
+          renderUrgenzeTable();
+        }
+      });
+      tdElement.appendChild(saveBtn);
+    }
+    
+    // Gestione del form per inserire nuove domande
     document.getElementById("questionForm").addEventListener("submit", function(e) {
       e.preventDefault();
       const questionInput = document.getElementById("questionInput");
       const questionText = questionInput.value.trim();
       if(questionText) {
         urgenzeData.push({ domanda: questionText, risposta: "" });
+        saveUrgenzeData();
         questionInput.value = "";
         renderUrgenzeTable();
       }
     });
     
+    // Funzione per scaricare i dati come file JSON
+    document.getElementById("downloadJsonBtn").addEventListener("click", function() {
+      const dataStr = JSON.stringify(urgenzeData, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "urgenzeData.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    
+    // Inizializza i dati e renderizza la tabella
+    loadUrgenzeData();
     renderUrgenzeTable();
   </script>
 </body>
