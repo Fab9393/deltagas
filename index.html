@@ -133,6 +133,7 @@
             <tr>
               <th>Domanda</th>
               <th>Risposta</th>
+              <th>Elimina</th>
             </tr>
           </thead>
           <tbody id="urgenzeTableBody">
@@ -189,20 +190,33 @@
     // Sezione Urgenze
     let urgenzeData = [];
     
-    // Carica i dati dal localStorage (se esistenti)
+    // Carica i dati dal file JSON nel repository o dal localStorage se esistono dati salvati
     function loadUrgenzeData() {
-      const data = localStorage.getItem("urgenzeData");
-      if(data) {
-        urgenzeData = JSON.parse(data);
+      const localData = localStorage.getItem("urgenzeData");
+      if(localData) {
+        urgenzeData = JSON.parse(localData);
+        renderUrgenzeTable();
+      } else {
+        fetch('urgenzeData.json')
+          .then(response => response.json())
+          .then(data => {
+             urgenzeData = data;
+             renderUrgenzeTable();
+          })
+          .catch(error => {
+             console.error("Errore nel caricamento di urgenzeData.json:", error);
+             urgenzeData = [];
+             renderUrgenzeTable();
+          });
       }
     }
     
-    // Salva i dati nel localStorage
+    // Salva i dati nel localStorage (modifiche locali, poiché il file statico non può essere aggiornato da client)
     function saveUrgenzeData() {
       localStorage.setItem("urgenzeData", JSON.stringify(urgenzeData));
     }
     
-    // Renderizza la tabella delle urgenze
+    // Renderizza la tabella delle urgenze, aggiungendo anche il pulsante "Elimina"
     function renderUrgenzeTable() {
       const tbody = document.getElementById('urgenzeTableBody');
       tbody.innerHTML = "";
@@ -224,7 +238,6 @@
         if(item.risposta) {
           tdRisposta.textContent = item.risposta;
         } else {
-          // Se non c'è risposta, mostra il pulsante per rispondere
           const answerBtn = document.createElement('button');
           answerBtn.textContent = "Rispondi";
           answerBtn.classList.add('action-btn');
@@ -233,13 +246,28 @@
         }
         tr.appendChild(tdRisposta);
         
+        // Colonna Elimina
+        const tdDelete = document.createElement('td');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = "Elimina";
+        deleteBtn.classList.add('action-btn');
+        deleteBtn.addEventListener('click', () => {
+          if(confirm("Sei sicuro di voler eliminare questa domanda?")) {
+            urgenzeData.splice(index, 1);
+            saveUrgenzeData();
+            renderUrgenzeTable();
+          }
+        });
+        tdDelete.appendChild(deleteBtn);
+        tr.appendChild(tdDelete);
+        
         tbody.appendChild(tr);
       });
     }
     
     // Mostra un input per inserire la risposta
     function showAnswerInput(index, tdElement) {
-      tdElement.innerHTML = ""; // pulisci il contenuto
+      tdElement.innerHTML = "";
       const input = document.createElement('input');
       input.type = "text";
       input.placeholder = "Inserisci la risposta";
@@ -289,7 +317,6 @@
     
     // Inizializza i dati e renderizza la tabella
     loadUrgenzeData();
-    renderUrgenzeTable();
   </script>
 </body>
 </html>
