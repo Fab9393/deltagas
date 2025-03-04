@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Sito Pulizie e Urgenze</title>
+  <style>
+    /* Stili generali */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    nav {
+      background: #333;
+      color: #fff;
+      padding: 10px 20px;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin-right: 20px;
+      font-size: 1.1em;
+      cursor: pointer;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+    section {
+      margin-top: 20px;
+      display: none;
+    }
+    section.active {
+      display: block;
+    }
+    .table-container {
+      max-height: 60vh;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      background: #fff;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background: #f2f2f2;
+      font-weight: bold;
+    }
+    input[type="number"],
+    input[type="text"] {
+      width: 90%;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .status-pending {
+      background-color: rgba(255, 100, 100, 0.3);
+    }
+    .status-answered {
+      background-color: rgba(100, 255, 100, 0.3);
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      background: #333;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a id="navHome">Home</a>
+    <a id="navUrgenze">Urgenze</a>
+  </nav>
+  
+  <div class="container">
+    <!-- Sezione Home -->
+    <section id="homeSection" class="active">
+      <h1>Home - Pulizie</h1>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Giorno</th>
+              <th>Esterni</th>
+              <th>Ufficio</th>
+              <th>Nuovi Clienti</th>
+            </tr>
+          </thead>
+          <tbody id="pulizieTableBody">
+            <!-- Righe generate dinamicamente -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+    
+    <!-- Sezione Urgenze -->
+    <section id="urgenzeSection">
+      <h1>Urgenze</h1>
+      <form id="questionForm">
+        <input type="text" id="questionInput" placeholder="Inserisci la domanda" required>
+        <button type="submit">Invia Domanda</button>
+      </form>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Domanda</th>
+              <th>Risposta</th>
+            </tr>
+          </thead>
+          <tbody id="urgenzeTableBody">
+            <!-- Righe generate dinamicamente -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  
+  <script>
+    // Funzione per mostrare la sezione desiderata
+    function showSection(sectionId) {
+      const sections = document.querySelectorAll("section");
+      sections.forEach(section => section.classList.remove("active"));
+      document.getElementById(sectionId).classList.add("active");
+    }
+    
+    // Gestione della navigazione
+    document.getElementById("navHome").addEventListener("click", () => showSection("homeSection"));
+    document.getElementById("navUrgenze").addEventListener("click", () => showSection("urgenzeSection"));
+    
+    // Funzione per generare la tabella della Home (pulizie)
+    function generatePulizieTable() {
+      const tbody = document.getElementById('pulizieTableBody');
+      tbody.innerHTML = "";
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const tr = document.createElement('tr');
+        const tdDay = document.createElement('td');
+        tdDay.textContent = day;
+        tr.appendChild(tdDay);
+        
+        ['Esterni', 'Ufficio', 'Nuovi Clienti'].forEach(() => {
+          const td = document.createElement('td');
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.min = 0;
+          input.placeholder = '0';
+          td.appendChild(input);
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      }
+    }
+    
+    generatePulizieTable();
+    
+    // Gestione della sezione Urgenze
+    let urgenzeData = [];
+    
+    function renderUrgenzeTable() {
+      const tbody = document.getElementById('urgenzeTableBody');
+      tbody.innerHTML = "";
+      urgenzeData.forEach(item => {
+        const tr = document.createElement('tr');
+        // Applica lo stile in base allo stato (con o senza risposta)
+        if(item.domanda && !item.risposta) {
+          tr.classList.add('status-pending');
+        } else if(item.domanda && item.risposta) {
+          tr.classList.add('status-answered');
+        }
+        
+        const tdDomanda = document.createElement('td');
+        tdDomanda.textContent = item.domanda || "";
+        tr.appendChild(tdDomanda);
+        
+        const tdRisposta = document.createElement('td');
+        tdRisposta.textContent = item.risposta || "";
+        tr.appendChild(tdRisposta);
+        
+        tbody.appendChild(tr);
+      });
+    }
+    
+    // Aggiunta di una nuova domanda tramite il form
+    document.getElementById("questionForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const questionInput = document.getElementById("questionInput");
+      const questionText = questionInput.value.trim();
+      if(questionText) {
+        urgenzeData.push({ domanda: questionText, risposta: "" });
+        questionInput.value = "";
+        renderUrgenzeTable();
+      }
+    });
+    
+    renderUrgenzeTable();
+  </script>
+</body>
+</html>
